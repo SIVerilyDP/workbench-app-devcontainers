@@ -1,16 +1,16 @@
-# GCP Data Chat — Workbench custom app (Flask)
+# GCP Data Chat — for local docker build testing
 FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+WORKDIR /workspace
 
-COPY app/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app/ .
+COPY . .
 
 EXPOSE 8080
 
