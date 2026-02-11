@@ -1,12 +1,19 @@
 services:
   app:
     container_name: "application-server"
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: "python:3.11-slim"
     restart: always
+    volumes:
+      - .:/workspace:cached
+      - work:/root/work
     ports:
       - "8080:8080"
+    command: >-
+      bash -c "
+        cd /workspace/app &&
+        pip install -q --no-cache-dir -r requirements.txt &&
+        exec python main.py
+      "
     # Optional: set these to auto-fetch OpenAI key from Secret Manager on startup
     # environment:
     #   OPENAI_SECRET_PROJECT: "wb-smart-cabbage-5940"
@@ -15,7 +22,9 @@ services:
     networks:
       - app-network
 
+volumes:
+  work:
+
 networks:
   app-network:
-    name: app-network
-    driver: bridge
+    external: true
