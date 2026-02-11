@@ -8,12 +8,7 @@ services:
       - work:/root/work
     ports:
       - "8080:8080"
-    command: >-
-      bash -c "
-        cd /workspace/app &&
-        pip install -q --no-cache-dir -r requirements.txt &&
-        exec python main.py
-      "
+    command: ["bash", "-c", "echo '[startup] Installing dependencies...' && cd /workspace/app && pip install -q --no-cache-dir -r requirements.txt && echo '[startup] Starting Flask on port 8080...' && exec python main.py"]
     # Optional: set these to auto-fetch OpenAI key from Secret Manager on startup
     # environment:
     #   OPENAI_SECRET_PROJECT: "wb-smart-cabbage-5940"
@@ -27,4 +22,5 @@ volumes:
 
 networks:
   app-network:
-    external: true
+    name: app-network
+    driver: bridge
