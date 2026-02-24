@@ -1,0 +1,17 @@
+services:
+  app:
+    container_name: "application-server"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app:cached
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    external: true

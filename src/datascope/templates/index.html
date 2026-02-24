@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Data Profiling Report</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .selector-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .selector-label {
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #495057;
+        }
+
+        .table-selector {
+            width: 100%;
+            padding: 12px;
+            font-size: 14px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .table-selector:hover {
+            border-color: #667eea;
+        }
+
+        .table-selector:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .table-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .info-item {
+            font-size: 13px;
+        }
+
+        .info-label {
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: #212529;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            background: white;
+            padding: 10px 10px 0 10px;
+            border-radius: 8px 8px 0 0;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: #e9ecef;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            color: #495057;
+        }
+
+        .tab:hover {
+            background: #dee2e6;
+        }
+
+        .tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 30px;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 8px;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .metric-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .column-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .column-header {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #212529;
+        }
+
+        .chart-container {
+            margin: 20px 0;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            font-size: 18px;
+            color: #6c757d;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #dc3545;
+            margin: 20px 0;
+        }
+
+        .value-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .value-table th,
+        .value-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .value-table th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+
+        .value-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .heatmap-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .heatmap-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .sample-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            overflow-x: auto;
+            display: block;
+        }
+
+        .sample-table th,
+        .sample-table td {
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .sample-table th {
+            background: #667eea;
+            color: white;
+            position: sticky;
+            top: 0;
+            font-weight: 600;
+        }
+
+        .type-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .type-numeric {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .type-categorical {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .type-datetime {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .no-data-message {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            font-size: 16px;
+        }
+
+        /* Chat Interface Styles */
+        .chat-messages {
+            min-height: 400px;
+            max-height: 500px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .message-user {
+            background: #667eea;
+            color: white;
+            margin-left: 20%;
+        }
+
+        .message-assistant {
+            background: white;
+            border: 1px solid #dee2e6;
+            margin-right: 20%;
+        }
+
+        .message-label {
+            font-weight: 600;
+            font-size: 12px;
+            margin-bottom: 8px;
+            opacity: 0.8;
+        }
+
+        .message-content {
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .message-loading {
+            background: white;
+            border: 1px solid #dee2e6;
+            margin-right: 20%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .send-button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .send-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .chat-spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .method-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge-statistics {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .badge-ai {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Multi-Table Data Profiling Report</h1>
+        <p>Comprehensive analysis of all workspace data sources</p>
+    </div>
+
+    <div class="container">
+        <div class="selector-section">
+            <div class="selector-label">Select Table to Profile:</div>
+            <select id="table-selector" class="table-selector">
+                <option value="">Loading tables...</option>
+            </select>
+            <div id="table-info" class="table-info" style="display: none;"></div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('overview')">Overview</button>
+            <button class="tab" onclick="showTab('columns')">Column Details</button>
+            <button class="tab" onclick="showTab('correlation')">Correlation</button>
+            <button class="tab" onclick="showTab('heatmap')">Heatmap</button>
+            <button class="tab" onclick="showTab('sample')">Sample Data</button>
+            <button class="tab" onclick="showTab('chat')">💬 Talk to Your Data</button>
+        </div>
+
+        <div id="overview" class="tab-content active">
+            <h2>Table-Level Metrics</h2>
+            <div id="table-metrics">
+                <div class="no-data-message">Please select a table to view profiling data</div>
+            </div>
+        </div>
+
+        <div id="columns" class="tab-content">
+            <h2>Column-Level Profiling</h2>
+            <div id="column-details">
+                <div class="no-data-message">Please select a table to view column profiles</div>
+            </div>
+        </div>
+
+        <div id="correlation" class="tab-content">
+            <h2>Correlation Matrix</h2>
+            <div id="correlation-matrix">
+                <div class="no-data-message">Please select a table to view correlations</div>
+            </div>
+        </div>
+
+        <div id="heatmap" class="tab-content">
+            <h2>Correlation Heatmap</h2>
+            <div id="heatmap-image">
+                <div class="no-data-message">Please select a table to view heatmap</div>
+            </div>
+        </div>
+
+        <div id="sample" class="tab-content">
+            <h2>Sample Data (First 100 Rows)</h2>
+            <div id="sample-data">
+                <div class="no-data-message">Please select a table to view sample data</div>
+            </div>
+        </div>
+
+        <div id="chat" class="tab-content">
+            <h2>💬 Talk to Your Data</h2>
+            <p style="color: #6c757d; margin-bottom: 10px;">Ask questions about your data in natural language. Powered by GPT-4o.</p>
+            <p style="background: #e7f3ff; color: #004085; padding: 10px; border-radius: 6px; margin-bottom: 20px; font-size: 13px;">
+                ℹ️ <strong>Performance Note:</strong> For optimal performance and cost efficiency, the chat analyzes the top 100 sample rows along with aggregate statistics computed from up to 1,000 rows of your data.
+            </p>
+
+            <div id="chat-messages" class="chat-messages"></div>
+
+            <div class="chat-input-container">
+                <textarea
+                    id="chat-input"
+                    class="chat-input"
+                    placeholder="Ask a question about your data... (e.g., 'What is the average billing amount for patients over 65?')"
+                    rows="3"
+                ></textarea>
+                <button id="send-button" class="send-button" onclick="sendQuestion()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allTables = [];
+        let currentTableInfo = null;
+        let profileData = null;
+
+        function showTab(tabName) {
+            const tabs = document.querySelectorAll('.tab');
+            const contents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(t => t.classList.remove('active'));
+            contents.forEach(c => c.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        function formatNumber(num) {
+            if (num === null || num === undefined) return 'N/A';
+            if (Number.isInteger(num)) return num.toLocaleString();
+            return num.toFixed(2).toLocaleString();
+        }
+
+        function showLoading(elementId) {
+            const html = '<div class="loading"><div class="spinner"></div><p>Loading data...</p></div>';
+            document.getElementById(elementId).innerHTML = html;
+        }
+
+        function showError(elementId, message) {
+            const html = `<div class="error">Error: ${message}</div>`;
+            document.getElementById(elementId).innerHTML = html;
+        }
+
+        async function loadTables() {
+            try {
+                const response = await fetch('api/discover-tables');
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const data = await response.json();
+
+                allTables = data.tables;
+
+                const selector = document.getElementById('table-selector');
+                selector.innerHTML = '<option value="">-- Select a table --</option>';
+
+                allTables.forEach(table => {
+                    const option = document.createElement('option');
+                    option.value = table.full_name;
+                    option.textContent = `${table.dataset_name}.${table.table} (${formatNumber(table.num_rows)} rows, ${table.size_mb} MB)`;
+                    option.dataset.tableInfo = JSON.stringify(table);
+                    selector.appendChild(option);
+                });
+
+                // Auto-select first table if available
+                if (allTables.length > 0) {
+                    selector.value = allTables[0].full_name;
+                    onTableSelect();
+                }
+            } catch (e) {
+                console.error('Error loading tables:', e);
+                const selector = document.getElementById('table-selector');
+                selector.innerHTML = '<option value="">Error loading tables</option>';
+            }
+        }
+
+        function onTableSelect() {
+            const selector = document.getElementById('table-selector');
+            const selectedOption = selector.options[selector.selectedIndex];
+
+            if (!selectedOption.value) {
+                document.getElementById('table-info').style.display = 'none';
+                return;
+            }
+
+            currentTableInfo = JSON.parse(selectedOption.dataset.tableInfo);
+
+            // Show table info
+            const infoDiv = document.getElementById('table-info');
+            infoDiv.style.display = 'grid';
+            infoDiv.innerHTML = `
+                <div class="info-item">
+                    <span class="info-label">Dataset:</span>
+                    <span class="info-value">${currentTableInfo.dataset_name}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Table:</span>
+                    <span class="info-value">${currentTableInfo.table}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Rows:</span>
+                    <span class="info-value">${formatNumber(currentTableInfo.num_rows)}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Size:</span>
+                    <span class="info-value">${currentTableInfo.size_mb} MB</span>
+                </div>
+            `;
+
+            // Load profiling data
+            loadProfile(selectedOption.value);
+        }
+
+        function renderTableMetrics(data) {
+            const html = `
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Total Rows</div>
+                        <div class="metric-value">${formatNumber(data.total_rows)}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Total Columns</div>
+                        <div class="metric-value">${formatNumber(data.total_columns)}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Memory Usage</div>
+                        <div class="metric-value">${formatNumber(data.memory_usage_mb)} MB</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Duplicate Rows</div>
+                        <div class="metric-value">${formatNumber(data.duplicate_rows)} (${formatNumber(data.duplicate_rows_pct)}%)</div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('table-metrics').innerHTML = html;
+        }
+
+        function renderColumnDetails(columns) {
+            let html = '';
+
+            for (const [colName, profile] of Object.entries(columns)) {
+                const typeClass = `type-${profile.type}`;
+                const typeBadge = `<span class="type-badge ${typeClass}">${profile.type}</span>`;
+
+                html += `
+                    <div class="column-card">
+                        <div class="column-header">${colName} ${typeBadge}</div>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-label">Count</div>
+                                <div class="stat-value">${formatNumber(profile.count)}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Missing</div>
+                                <div class="stat-value">${formatNumber(profile.missing)} (${formatNumber(profile.missing_pct)}%)</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Unique</div>
+                                <div class="stat-value">${formatNumber(profile.unique)}</div>
+                            </div>
+                `;
+
+                if (profile.type === 'numeric') {
+                    html += `
+                            <div class="stat-item">
+                                <div class="stat-label">Mean</div>
+                                <div class="stat-value">${formatNumber(profile.mean)}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Std Dev</div>
+                                <div class="stat-value">${formatNumber(profile.std)}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Min</div>
+                                <div class="stat-value">${formatNumber(profile.min)}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">25%</div>
+                                <div class="stat-value">${formatNumber(profile.q25)}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Median</div>
+                                <div class="stat-value">${formatNumber(profile.median)}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">75%</div>
+                                <div class="stat-value">${formatNumber(profile.q75)}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Max</div>
+                                <div class="stat-value">${formatNumber(profile.max)}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Skewness</div>
+                                <div class="stat-value">${formatNumber(profile.skewness)}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Kurtosis</div>
+                                <div class="stat-value">${formatNumber(profile.kurtosis)}</div>
+                            </div>
+                        </div>
+                    `;
+
+                    if (profile.histogram) {
+                        html += `<div class="chart-container"><div id="hist-${colName.replace(/\s+/g, '-')}"></div></div>`;
+                    }
+                } else if (profile.type === 'categorical') {
+                    html += `</div>`;
+
+                    if (profile.top_values && profile.top_values.length > 0) {
+                        html += `
+                            <table class="value-table">
+                                <thead>
+                                    <tr>
+                                        <th>Value</th>
+                                        <th>Count</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+                        profile.top_values.forEach(item => {
+                            html += `
+                                <tr>
+                                    <td>${item.value}</td>
+                                    <td>${formatNumber(item.count)}</td>
+                                    <td>${formatNumber(item.percentage)}%</td>
+                                </tr>
+                            `;
+                        });
+                        html += `</tbody></table>`;
+                    }
+                } else if (profile.type === 'datetime') {
+                    html += `
+                            <div class="stat-item">
+                                <div class="stat-label">Min Date</div>
+                                <div class="stat-value">${profile.min || 'N/A'}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Max Date</div>
+                                <div class="stat-value">${profile.max || 'N/A'}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Range (Days)</div>
+                                <div class="stat-value">${formatNumber(profile.range_days)}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                html += `</div>`;
+            }
+
+            document.getElementById('column-details').innerHTML = html;
+
+            // Render histograms
+            for (const [colName, profile] of Object.entries(columns)) {
+                if (profile.type === 'numeric' && profile.histogram) {
+                    const divId = `hist-${colName.replace(/\s+/g, '-')}`;
+                    const trace = {
+                        x: profile.histogram.bins,
+                        y: profile.histogram.counts,
+                        type: 'bar',
+                        marker: { color: '#667eea' }
+                    };
+                    const layout = {
+                        title: `Distribution of ${colName}`,
+                        xaxis: { title: colName },
+                        yaxis: { title: 'Frequency' },
+                        margin: { t: 50, b: 50, l: 50, r: 30 }
+                    };
+                    Plotly.newPlot(divId, [trace], layout, {responsive: true});
+                }
+            }
+        }
+
+        function renderCorrelationMatrix(corr) {
+            if (!corr) {
+                document.getElementById('correlation-matrix').innerHTML = '<p class="no-data-message">No numeric columns available for correlation analysis.</p>';
+                return;
+            }
+
+            const trace = {
+                z: corr.matrix,
+                x: corr.columns,
+                y: corr.columns,
+                type: 'heatmap',
+                colorscale: 'RdBu',
+                zmid: 0
+            };
+
+            const layout = {
+                title: 'Correlation Matrix',
+                xaxis: { side: 'bottom' },
+                yaxis: { autorange: 'reversed' },
+                margin: { t: 50, b: 100, l: 100, r: 50 }
+            };
+
+            Plotly.newPlot('correlation-matrix', [trace], layout, {responsive: true});
+        }
+
+        function renderHeatmap(imageBase64) {
+            if (!imageBase64) {
+                document.getElementById('heatmap-image').innerHTML = '<p class="no-data-message">No numeric columns available for heatmap.</p>';
+                return;
+            }
+
+            const html = `
+                <div class="heatmap-container">
+                    <img src="data:image/png;base64,${imageBase64}" alt="Correlation Heatmap">
+                </div>
+            `;
+            document.getElementById('heatmap-image').innerHTML = html;
+        }
+
+        async function loadSampleData(tableName) {
+            try {
+                showLoading('sample-data');
+                const response = await fetch(`api/sample-data?table=${encodeURIComponent(tableName)}`);
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const data = await response.json();
+
+                let html = '<div style="overflow-x: auto;"><table class="sample-table"><thead><tr>';
+
+                data.columns.forEach(col => {
+                    html += `<th>${col}</th>`;
+                });
+                html += '</tr></thead><tbody>';
+
+                data.data.forEach(row => {
+                    html += '<tr>';
+                    data.columns.forEach(col => {
+                        const value = row[col] !== null && row[col] !== undefined ? row[col] : '';
+                        html += `<td>${value}</td>`;
+                    });
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table></div>';
+                document.getElementById('sample-data').innerHTML = html;
+            } catch (e) {
+                showError('sample-data', e.message);
+            }
+        }
+
+        async function loadProfile(tableName) {
+            try {
+                // Show loading state
+                showLoading('table-metrics');
+                showLoading('column-details');
+                showLoading('correlation-matrix');
+                showLoading('heatmap-image');
+
+                // Fetch profile
+                const response = await fetch(`api/profile?table=${encodeURIComponent(tableName)}`);
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                profileData = await response.json();
+
+                // Render all sections
+                renderTableMetrics(profileData.table);
+                renderColumnDetails(profileData.columns);
+                renderCorrelationMatrix(profileData.correlation);
+                renderHeatmap(profileData.heatmap);
+                loadSampleData(tableName);
+            } catch (e) {
+                showError('table-metrics', e.message);
+                showError('column-details', e.message);
+                showError('correlation-matrix', e.message);
+                showError('heatmap-image', e.message);
+                showError('sample-data', e.message);
+                console.error('Error loading profile:', e);
+            }
+        }
+
+        async function sendQuestion() {
+            const input = document.getElementById('chat-input');
+            const question = input.value.trim();
+            const sampleSize = 1000; // Fixed sample size for performance
+            const sendButton = document.getElementById('send-button');
+
+            if (!question) return;
+
+            const selector = document.getElementById('table-selector');
+            const tableName = selector.value;
+
+            if (!tableName) {
+                alert('Please select a table first');
+                return;
+            }
+
+            // Disable input while processing
+            input.disabled = true;
+            sendButton.disabled = true;
+
+            // Add user message to chat
+            const chatMessages = document.getElementById('chat-messages');
+            const userMessage = document.createElement('div');
+            userMessage.className = 'message message-user';
+            userMessage.innerHTML = `
+                <div class="message-label">You</div>
+                <div class="message-content">${question}</div>
+            `;
+            chatMessages.appendChild(userMessage);
+
+            // Clear input
+            input.value = '';
+
+            // Add loading message
+            const loadingMessage = document.createElement('div');
+            loadingMessage.className = 'message message-loading';
+            loadingMessage.innerHTML = `
+                <div class="chat-spinner"></div>
+                <div class="message-content">Thinking...</div>
+            `;
+            chatMessages.appendChild(loadingMessage);
+
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            try {
+                // Send question to API
+                const response = await fetch('api/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        question: question,
+                        table: tableName,
+                        sample_size: sampleSize === 0 ? 999999 : sampleSize
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to get response');
+                }
+
+                const result = await response.json();
+
+                // Remove loading message
+                chatMessages.removeChild(loadingMessage);
+
+                // Determine method badge
+                let methodBadge = '';
+                if (result.method === 'statistics') {
+                    methodBadge = '<span class="method-badge badge-statistics">📊 Instant Answer</span>';
+                } else if (result.method === 'ai') {
+                    methodBadge = '<span class="method-badge badge-ai">🤖 AI Analysis</span>';
+                }
+
+                // Add assistant message
+                const assistantMessage = document.createElement('div');
+                assistantMessage.className = 'message message-assistant';
+                assistantMessage.innerHTML = `
+                    <div class="message-label">
+                        Assistant (using ${result.sample_size_used.toLocaleString()} of ${result.total_rows.toLocaleString()} rows)
+                        ${methodBadge}
+                    </div>
+                    <div class="message-content">${result.answer}</div>
+                `;
+                chatMessages.appendChild(assistantMessage);
+
+                // Scroll to bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            } catch (e) {
+                // Remove loading message
+                chatMessages.removeChild(loadingMessage);
+
+                // Add error message
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'message message-assistant';
+                errorMessage.innerHTML = `
+                    <div class="message-label">Error</div>
+                    <div class="message-content" style="color: #dc3545;">Failed to get response: ${e.message}</div>
+                `;
+                chatMessages.appendChild(errorMessage);
+            } finally {
+                // Re-enable input
+                input.disabled = false;
+                sendButton.disabled = false;
+                input.focus();
+            }
+        }
+
+        // Allow Enter to send (Shift+Enter for new line)
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatInput = document.getElementById('chat-input');
+            if (chatInput) {
+                chatInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendQuestion();
+                    }
+                });
+            }
+        });
+
+        // Initialize
+        document.getElementById('table-selector').addEventListener('change', onTableSelect);
+        loadTables();
+    </script>
+</body>
+</html>

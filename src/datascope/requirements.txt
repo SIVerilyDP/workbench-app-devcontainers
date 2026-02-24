@@ -1,0 +1,11 @@
+flask==3.0.0
+flask-cors==4.0.0
+google-cloud-bigquery==3.14.1
+google-cloud-storage==2.14.0
+google-cloud-secret-manager==2.18.1
+pandas==2.1.4
+numpy==1.26.2
+matplotlib==3.8.2
+seaborn==0.13.0
+scipy==1.11.4
+openai==1.7.2

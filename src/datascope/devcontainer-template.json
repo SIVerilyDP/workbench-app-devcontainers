@@ -1,0 +1,8 @@
+{
+  "id": "datascope",
+  "description": "DataScope - Comprehensive BigQuery data profiling dashboard with AI-powered chat. Auto-discovers workspace data sources, provides detailed column-level statistics, visualizations, correlations, and smart query routing for instant insights.",
+  "version": "1.0.0",
+  "name": "DataScope",
+  "options": {},
+  "platforms": ["Any"]
+}
