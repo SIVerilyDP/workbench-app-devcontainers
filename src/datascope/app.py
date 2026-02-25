@@ -36,9 +36,11 @@ def get_openai_client():
 
     try:
         # Retrieve API key from Google Cloud Secret Manager
-        project_id = "wb-smart-cabbage-5940"
+        # Use workspace project instead of separate project
+        project_id = os.environ.get('GOOGLE_CLOUD_PROJECT', 'wb-beady-aubergine-7486')
         secret_name = f"projects/{project_id}/secrets/si-ops-openai-api-key/versions/latest"
 
+        print(f"Attempting to retrieve OpenAI secret from project: {project_id}")
         secret_client = secretmanager.SecretManagerServiceClient()
         response = secret_client.access_secret_version(name=secret_name)
         api_key = response.payload.data.decode("UTF-8")
@@ -48,14 +50,18 @@ def get_openai_client():
             api_key=api_key,
             base_url="https://us.api.openai.com/v1"
         )
+        print("✅ OpenAI client initialized successfully")
         return _openai_client
     except Exception as e:
-        print(f"Error initializing OpenAI client: {e}")
+        print(f"❌ Error initializing OpenAI client: {e}")
+        print(f"   Project: {os.environ.get('GOOGLE_CLOUD_PROJECT', 'wb-beady-aubergine-7486')}")
+        print(f"   Make sure secret 'si-ops-openai-api-key' exists in the workspace project")
         return None
 
 def get_workspace_datasets():
     """Discover all BigQuery datasets in workspace"""
     datasets = []
+    print("🔍 Discovering BigQuery datasets in workspace...")
 
     # Hardcoded workspace datasets (from CLAUDE.md)
     workspace_datasets = {
@@ -87,12 +93,18 @@ def get_workspace_datasets():
 
 def discover_all_tables():
     """Discover all tables across all BigQuery datasets in workspace"""
-    client = bigquery.Client()
-    all_tables = []
+    try:
+        client = bigquery.Client()
+        all_tables = []
 
-    datasets = get_workspace_datasets()
+        datasets = get_workspace_datasets()
+        print(f"📊 Found {len(datasets)} datasets in workspace")
 
-    for ds_info in datasets:
+        if not datasets:
+            print("⚠️ No BigQuery datasets found in workspace environment variables")
+            return []
+
+        for ds_info in datasets:
         try:
             dataset_ref = f"{ds_info['project']}.{ds_info['dataset']}"
             tables = client.list_tables(dataset_ref)
@@ -115,10 +127,16 @@ def discover_all_tables():
                     'modified': str(table_ref.modified) if table_ref.modified else None
                 })
         except Exception as e:
-            print(f"Error listing tables in {ds_info['name']}: {e}")
+            print(f"❌ Error listing tables in {ds_info['name']}: {e}")
             continue
 
-    return all_tables
+        print(f"✅ Discovered {len(all_tables)} total tables")
+        return all_tables
+    except Exception as e:
+        print(f"❌ Fatal error in discover_all_tables: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
 
 def load_bigquery_table(table_full_name, limit=None):
     """Load data from a specific BigQuery table"""
