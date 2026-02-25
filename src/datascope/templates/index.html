@@ -441,26 +441,6 @@
             animation: spin 1s linear infinite;
         }
 
-        .method-badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            margin-left: 10px;
-        }
-
-        .badge-statistics {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .badge-ai {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
     </style>
 </head>
 <body>
@@ -526,7 +506,7 @@
             <h2>💬 Talk to Your Data</h2>
             <p style="color: #6c757d; margin-bottom: 10px;">Ask questions about your data in natural language. Powered by GPT-4o.</p>
             <p style="background: #e7f3ff; color: #004085; padding: 10px; border-radius: 6px; margin-bottom: 20px; font-size: 13px;">
-                ℹ️ <strong>Performance Note:</strong> For optimal performance and cost efficiency, the chat analyzes the top 100 sample rows along with aggregate statistics computed from up to 1,000 rows of your data.
+                ℹ️ <strong>Note:</strong> Answers are based on analysis of 1,000 random rows from your selected table.
             </p>
 
             <div id="chat-messages" class="chat-messages"></div>
@@ -973,21 +953,12 @@
                 // Remove loading message
                 chatMessages.removeChild(loadingMessage);
 
-                // Determine method badge
-                let methodBadge = '';
-                if (result.method === 'statistics') {
-                    methodBadge = '<span class="method-badge badge-statistics">📊 Instant Answer</span>';
-                } else if (result.method === 'ai') {
-                    methodBadge = '<span class="method-badge badge-ai">🤖 AI Analysis</span>';
-                }
-
                 // Add assistant message
                 const assistantMessage = document.createElement('div');
                 assistantMessage.className = 'message message-assistant';
                 assistantMessage.innerHTML = `
                     <div class="message-label">
-                        Assistant (using ${result.sample_size_used.toLocaleString()} of ${result.total_rows.toLocaleString()} rows)
-                        ${methodBadge}
+                        Assistant (analyzed ${result.sample_size_used.toLocaleString()} of ${result.total_rows.toLocaleString()} rows)
                     </div>
                     <div class="message-content">${result.answer}</div>
                 `;

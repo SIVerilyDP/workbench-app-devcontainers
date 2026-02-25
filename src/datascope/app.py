@@ -380,138 +380,14 @@ def clear_cache():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-def find_column_in_question(question, columns):
-    """Find which column the question is asking about"""
-    question_lower = question.lower()
-
-    # Try exact matches first
-    for col in columns:
-        if col.lower() in question_lower:
-            return col
-
-    # Try partial matches
-    for col in columns:
-        col_words = col.lower().split()
-        for word in col_words:
-            if len(word) > 3 and word in question_lower:
-                return col
-
-    return None
-
-def answer_from_statistics(question, context):
-    """Try to answer question directly from aggregate statistics"""
-    question_lower = question.lower()
-    columns = context['columns']
-
-    # Find which column the question is about
-    target_column = find_column_in_question(question, columns)
-
-    if not target_column:
-        return None
-
-    # Pattern 1: Average/Mean
-    if any(word in question_lower for word in ['average', 'mean', 'avg']):
-        if target_column in context['numeric_statistics']:
-            stats = context['numeric_statistics'][target_column]
-            return {
-                'answer': f"The average {target_column} is {stats['mean']:.2f} (based on {stats['count']:,} values from the sample of {context['sample_size']:,} rows).",
-                'method': 'statistics',
-                'stat_used': f"mean of {target_column}"
-            }
-
-    # Pattern 2: Maximum/Highest
-    if any(word in question_lower for word in ['maximum', 'max', 'highest', 'largest']):
-        if target_column in context['numeric_statistics']:
-            stats = context['numeric_statistics'][target_column]
-            return {
-                'answer': f"The maximum {target_column} is {stats['max']:.2f} (from a sample of {context['sample_size']:,} rows).",
-                'method': 'statistics',
-                'stat_used': f"max of {target_column}"
-            }
-
-    # Pattern 3: Minimum/Lowest
-    if any(word in question_lower for word in ['minimum', 'min', 'lowest', 'smallest']):
-        if target_column in context['numeric_statistics']:
-            stats = context['numeric_statistics'][target_column]
-            return {
-                'answer': f"The minimum {target_column} is {stats['min']:.2f} (from a sample of {context['sample_size']:,} rows).",
-                'method': 'statistics',
-                'stat_used': f"min of {target_column}"
-            }
-
-    # Pattern 4: Most common/frequent/prescribed
-    if any(word in question_lower for word in ['most common', 'most frequent', 'most prescribed', 'top', 'most popular']):
-        if target_column in context['categorical_statistics']:
-            stats = context['categorical_statistics'][target_column]
-            if stats['top_values']:
-                top = stats['top_values'][0]
-                answer = f"The most common {target_column} is '{top['value']}' with {top['count']:,} occurrences ({top['percentage']:.1f}% of the sample)."
-
-                # Add top 5 if available
-                if len(stats['top_values']) > 1:
-                    answer += "\n\nTop 5:\n"
-                    for i, item in enumerate(stats['top_values'][:5], 1):
-                        answer += f"{i}. {item['value']}: {item['count']:,} ({item['percentage']:.1f}%)\n"
-
-                return {
-                    'answer': answer,
-                    'method': 'statistics',
-                    'stat_used': f"top values of {target_column}"
-                }
-
-    # Pattern 5: How many unique/distinct
-    if any(phrase in question_lower for phrase in ['how many unique', 'how many different', 'unique count', 'distinct']):
-        if target_column in context['categorical_statistics']:
-            stats = context['categorical_statistics'][target_column]
-            return {
-                'answer': f"There are {stats['unique_count']:,} unique values in the {target_column} column (from a sample of {context['sample_size']:,} rows).",
-                'method': 'statistics',
-                'stat_used': f"unique count of {target_column}"
-            }
-
-    # Pattern 6: Count of specific value (e.g., "how many patients have diabetes")
-    if 'how many' in question_lower or 'count' in question_lower:
-        if target_column in context['categorical_statistics']:
-            stats = context['categorical_statistics'][target_column]
-            # Try to find the specific value mentioned
-            for item in stats['top_values']:
-                if item['value'].lower() in question_lower:
-                    return {
-                        'answer': f"There are {item['count']:,} rows where {target_column} is '{item['value']}' ({item['percentage']:.1f}% of the {context['sample_size']:,} row sample).",
-                        'method': 'statistics',
-                        'stat_used': f"count of specific value in {target_column}"
-                    }
-
-    # Pattern 7: Median
-    if 'median' in question_lower:
-        if target_column in context['numeric_statistics']:
-            stats = context['numeric_statistics'][target_column]
-            return {
-                'answer': f"The median {target_column} is {stats['median']:.2f} (based on {stats['count']:,} values from the sample of {context['sample_size']:,} rows).",
-                'method': 'statistics',
-                'stat_used': f"median of {target_column}"
-            }
-
-    # Pattern 8: Standard deviation
-    if any(word in question_lower for word in ['standard deviation', 'std dev', 'std', 'variance', 'variability']):
-        if target_column in context['numeric_statistics']:
-            stats = context['numeric_statistics'][target_column]
-            return {
-                'answer': f"The standard deviation of {target_column} is {stats['std']:.2f} (mean: {stats['mean']:.2f}, based on {stats['count']:,} values).",
-                'method': 'statistics',
-                'stat_used': f"std of {target_column}"
-            }
-
-    return None
-
 @app.route('/api/ask', methods=['POST'])
 def ask_question():
-    """Ask a question about the data using smart routing (statistics or OpenAI)"""
+    """Ask a question about the data using OpenAI"""
     try:
         data = request.get_json()
         question = data.get('question')
         table_name = data.get('table')
-        sample_size = data.get('sample_size', 1000)  # Default 1000 rows
+        sample_size = 1000  # Always use 1000 random rows
 
         if not question:
             return jsonify({"error": "Question is required"}), 400
@@ -604,20 +480,7 @@ def ask_question():
                 ]
             }
 
-        # SMART ROUTING: Try to answer from statistics first
-        stats_answer = answer_from_statistics(question, context)
-        if stats_answer:
-            # We can answer this directly from statistics!
-            return jsonify({
-                "answer": stats_answer['answer'],
-                "sample_size_used": len(df_sample),
-                "total_rows": len(df),
-                "method": stats_answer['method'],
-                "stat_used": stats_answer.get('stat_used')
-            })
-
-        # If we can't answer from stats, use OpenAI
-        # Build the prompt
+        # Build the prompt for OpenAI
         system_prompt = """You are a data analyst assistant. You help users understand and analyze their healthcare data.
 
 Provide clear, accurate answers based on the data provided. When referencing numbers, be specific.
